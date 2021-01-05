@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="content">
+  <div id="content">
     <div class="columns is-centered">
       <div class="column is-two-thirds">
         <form method="POST" action="/message">
@@ -42,4 +42,7 @@
       </div>
     </div>
   </div>
+{% endblock %}
+{% block page-scripts %}
+  {% script "/js/app.js" %}
 {% endblock %}
