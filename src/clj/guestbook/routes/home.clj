@@ -35,7 +35,5 @@
    {:middleware [middleware/wrap-csrf
                  middleware/wrap-formats]}
    ["/" {:get home-page}]
-   ["/about" {:get about-page}]
-   ["/message" {:post save-message!}]
-   ["/messages" {:get message-list}]])
+   ["/about" {:get about-page}]])
 
