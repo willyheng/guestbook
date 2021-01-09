@@ -37,7 +37,8 @@
                  [re-frame "1.0.0"]
                  [com.google.javascript/closure-compiler-unshaded "v20190618" :scope "provided"]
                  [org.clojure/google-closure-library "0.0-20190213-2033d5d9" :scope "provided"]
-                 [thheller/shadow-cljs "2.8.39"]]
+                 [thheller/shadow-cljs "2.8.39"]
+                 [day8.re-frame/re-frame-10x "0.7.0"]]
 
   :min-lein-version "2.0.0"
   
@@ -53,7 +54,8 @@
   {:uberjar {:omit-source true
              :aot :all
              :uberjar-name "guestbook.jar"
-             :source-paths ["env/prod/clj"]
+             :source-paths ["env/prod/clj" "env/prod/cljc" "env/prod/cljs"]
+             :prep-tasks ["compile" ["run" "-m" "shadow.cljs.devtools.cli" "release" "app"]]
              :resource-paths ["env/prod/resources"]}
 
    :dev           [:project/dev :profiles/dev]
