@@ -8,7 +8,8 @@
     [ring.middleware.webjars :refer [wrap-webjars]]
     [guestbook.env :refer [defaults]]
     [mount.core :as mount]
-    [guestbook.routes.services :refer [service-routes]]))
+    [guestbook.routes.services :refer [service-routes]]
+    [guestbook.routes.websockets :refer [websocket-routes]]))
 
 (mount/defstate init-app
   :start ((or (:init defaults) (fn [])))
@@ -19,7 +20,8 @@
   (ring/ring-handler
     (ring/router
       [(home-routes)
-       (service-routes)])
+       (service-routes)
+       (websocket-routes)])
     (ring/routes
       (ring/create-resource-handler
         {:path "/"})
