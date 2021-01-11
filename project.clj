@@ -38,7 +38,8 @@
                  [com.google.javascript/closure-compiler-unshaded "v20190618" :scope "provided"]
                  [org.clojure/google-closure-library "0.0-20190213-2033d5d9" :scope "provided"]
                  [thheller/shadow-cljs "2.8.39"]
-                 [day8.re-frame/re-frame-10x "0.7.0"]]
+                 [day8.re-frame/re-frame-10x "0.7.0"]
+                 [com.taoensso/sente "1.15.0"]]
 
   :min-lein-version "2.0.0"
   
