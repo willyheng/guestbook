@@ -14,13 +14,31 @@
    {:db {:messages/loading? true}
     :dispatch [:messages/load]}))
 
+(rf/reg-fx
+ :ajax/get
+ (fn [{:keys [url success-event error-event success-path]}]
+   (GET url
+        (cond-> {:headers {"Accept" "application/transit+json"}}
+          success-event (assoc :handler
+                               #(rf/dispatch
+                                 (conj success-event
+                                       (if success-path
+                                         (get-in % success-path)
+                                         %))))
+          error-event (assoc :error-handler
+                             #(rf/dispatch
+                               (conj error-event %)))))))
+
 (rf/reg-event-fx
  :messages/load
  (fn [{:keys [db]} _]
    (GET "/api/messages"
         {:headers {"Accept" "application/transit+json"}
          :handler #(rf/dispatch [:messages/set (:messages %)])})
-   {:db (assoc db :messages/loading? true)}))
+   {:db (assoc db :messages/loading? true)
+    :ajax/get {:url "/api/messages"
+               :success-path [:messages]
+               :success-event [:messages/set]}}))
 
 (rf/reg-sub
  :messages/loading?
@@ -110,17 +128,19 @@
 ;; Message
 
 (rf/reg-event-fx
+ :message/send!-called-back
+ (fn [_ [_ {:keys [success errors]}]]
+   (if success
+     {:dispatch [:form/clear-fields]}
+     {:dispatch [:form/set-server-errors errors]})))
+
+(rf/reg-event-fx
  :message/send!
  (fn [{:keys [db]} [_ fields]]
-   (ws/send!
-    [:message/create! fields]
-    10000
-    (fn [{:keys [success errors] :as response}]
-      (.log js/console "Called Back: " (pr-str response))
-      (if success
-        (rf/dispatch [:form/clear-fields])
-        (rf/dispatch [:form/set-server-errors errors]))))
-   {:db (dissoc db :form/server-errors)}))
+   {:db (dissoc db :form/server-errors)
+    :ws/send! {:message [:message/create! fields]
+               :timeout 10000
+               :callback-event [:message/send!-called-back]}}))
 
 (defn handle-response! [response]
   (if-let [errors (:errors response)]
