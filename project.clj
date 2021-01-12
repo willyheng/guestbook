@@ -40,7 +40,8 @@
                  [thheller/shadow-cljs "2.8.39"]
                  [day8.re-frame/re-frame-10x "0.7.0"]
                  [com.taoensso/sente "1.15.0"]
-                 [org.postgresql/postgresql "42.2.6"]]
+                 [org.postgresql/postgresql "42.2.6"]
+                 [buddy "2.0.0"]]
 
   :min-lein-version "2.0.0"
   
