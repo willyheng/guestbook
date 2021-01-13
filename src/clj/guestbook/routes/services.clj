@@ -12,7 +12,8 @@
    [reitit.ring.middleware.multipart :as multipart]
    [reitit.ring.middleware.parameters :as parameters]
    [guestbook.middleware.formats :as formats]
-   [guestbook.auth :as auth]))
+   [guestbook.auth :as auth]
+   [spec-tools.data-spec :as ds]))
 
 (defn service-routes []
   ["/api"
@@ -69,6 +70,23 @@
                                         user)))
                 (response/unauthorized
                  {:message "Incorrect login or password."})))}}]
+
+   ["/session"
+    {:get
+     {:response
+      {200
+       {:body
+        {:session
+         {:identity
+          (ds/maybe
+           {:login string?
+            :created_at inst?})}}}}
+      :handler
+      (fn [{{:keys [identity]} :session}]
+        (response/ok {:session
+                      {:identity
+                       (not-empty
+                        (select-keys identity [:login :created_at]))}}))}}]
 
    ["/register"
     {:post {:parameters
