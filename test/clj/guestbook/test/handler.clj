@@ -14,7 +14,8 @@
   :once
   (fn [f]
     (mount/start #'guestbook.config/env
-                 #'guestbook.handler/app-routes)
+                 #'guestbook.routes.websockets/socket
+                 #'guestbook.handler/routes)
     (f)))
 
 (deftest test-app
