@@ -9,6 +9,11 @@ RETURNING *;
 -- :doc selects all available messages
 SELECT * FROM posts
 
+-- :name get-messages-by-author :? :*
+-- :doc selects all messages from author
+SELECT * FROM posts
+WHERE author = :author
+
 -- :name create-user! :! :n
 -- :doc creates a new user with provided login and hashed password
 INSERT INTO users

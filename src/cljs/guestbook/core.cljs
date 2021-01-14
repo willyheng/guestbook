@@ -6,7 +6,10 @@
             [clojure.string :as string]
             [guestbook.validation :refer [validate-message]]
             [guestbook.websockets :as ws]
-            [mount.core :as mount]))
+            [mount.core :as mount]
+            [reitit.coercion.spec :as reitit-spec]
+            [reitit.frontend :as rtf]
+            [reitit.frontend.easy :as rtfe]))
 
 (rf/reg-event-fx
  :app/initialize
@@ -322,7 +325,7 @@
        ;; Add the author (e.g. <@username>)
        " <"
        (if author
-         (str "@" author)
+         [:a {:href (str "/user/" author)} (str "@" author)]
          [:span.is-italic "account not found"])
        ">"]])])
 
@@ -517,16 +520,63 @@
               [login-button]
               [register-button]]])]]))))
 
+(defn author []
+  [:div
+   [:p "This page hasn't been implemented yet!"]
+   [:a {:href "/"} "Return home"]])
+
+;; Routing
+
+(def routes
+  ["/"
+   ["" {:name ::home
+        :view home}]
+   ["user/:user"
+    {:name ::author
+     :view author}]])
+
+(def router
+  (rtf/router
+   routes
+   {:data {:coercion reitit-spec/coercion}}))
+
+(rf/reg-event-db
+ :router/navigated
+ (fn [db [_ new-match]]
+   (assoc db :router/current-route new-match)))
+
+(rf/reg-sub
+ :router/current-route
+ (fn [db]
+   (:router/current-route db)))
+
+(defn init-routes! []
+  (rtfe/start!
+   router
+   (fn [new-match]
+     (when new-match
+       (rf/dispatch [:router/navigated new-match])))
+   {:use-fragment false}))
+
+;; Initialize app
+
+(defn page [{{:keys [view name]} :data
+             path :path}]
+  [:section.section>div.container
+   (if view
+     [view]
+     [:div "No view specified for route: " name " (" path ")"])])
+
 (defn app []
-  [:div.app
-   [navbar]
-   [:section.section
-    [:div.container
-     [home]]]])
+  (let [current-route @(rf/subscribe [:router/current-route])]
+    [:div.app
+     [navbar]
+     [page current-route]]))
 
 (defn ^:dev/after-load mount-components []
   (rf/clear-subscription-cache!)
   (.log js/console "Mounting components...")
+  (init-routes!)
   (dom/render [#'app] (.getElementById js/document "content"))
   (.log js/console "Components Mounted!"))
 
