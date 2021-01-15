@@ -108,7 +108,7 @@
 
 (defn logout-button []
   [:button.button
-   {:on-click #(POST "api/logout"
+   {:on-click #(POST "/api/logout"
                      {:handler (fn [_] (rf/dispatch [:auth/handle-logout]))})}
    "Log Out"])
 
