@@ -7,8 +7,20 @@
 (rf/reg-event-fx
  :messages/load
  (fn [{:keys [db]} _]
-   {:db (assoc db :messages/loading? true)
+   {:db (assoc db
+               :messages/loading? true
+               :messages/filter nil)
     :ajax/get {:url "/api/messages"
+               :success-path [:messages]
+               :success-event [:messages/set]}}))
+
+(rf/reg-event-fx
+ :messages/load-by-author
+ (fn [{:keys [db]} [_ author]]
+   {:db (assoc db
+               :messages/loading? true
+               :messages/filter {:author author})
+    :ajax/get {:url (str "/api/messages/by/" author)
                :success-path [:messages]
                :success-event [:messages/set]}}))
 
@@ -29,10 +41,25 @@
  (fn [db _]
    (:messages/list db [])))
 
+(defn add-message? [filter-map msg]
+  (every?
+   (fn [[k matcher]]
+     (let [v (get msg k)]
+       (cond
+         (set? matcher)
+         (matcher v)
+         (fn? matcher)
+         (matcher v)
+         :else
+         (= matcher v))))
+   filter-map))
+
 (rf/reg-event-db
  :message/add
  (fn [db [_ message]]
-   (update db :messages/list conj message)))
+   (if (add-message? (:messages/filter db) message)
+     (update db :messages/list conj message)
+     db)))
 
 ;; Fields
 

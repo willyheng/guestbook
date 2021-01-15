@@ -12,14 +12,15 @@
             [guestbook.websockets :as ws]
             [guestbook.auth :as auth]
             [guestbook.messages :as messages]
-            [guestbook.ajax :as ajax]))
+            [guestbook.ajax :as ajax]
+            [reitit.frontend.controllers :as rtfc]))
 
 (rf/reg-event-fx
  :app/initialize
  (fn [_ _]
    {:db {:messages/loading? true
          :session/loading? true}
-    :dispatch-n [[:session/load] [:messages/load]]}))
+    :dispatch [:session/load]}))
 
 ;; Routing
 
@@ -43,7 +44,14 @@
    router
    (fn [new-match]
      (when new-match
-       (rf/dispatch [:router/navigated new-match])))
+       (let [{controllers :controllers}
+             @(rf/subscribe [:router/current-route])
+
+             new-match-with-controllers
+             (assoc new-match
+                    :controllers
+                    (rtfc/apply-controllers controllers new-match))]
+         (rf/dispatch [:router/navigated new-match-with-controllers]))))
    {:use-fragment false}))
 
 (defn navbar []
@@ -112,7 +120,7 @@
 (defn init! []
   (.log js/console "initializing App...")
   (mount/start)
-  (rf/dispatch [:app/initialize]) 
+  (rf/dispatch-sync [:app/initialize]) 
   (mount-components))
 
 (.log js/console "guestbook.core evaluated!")
