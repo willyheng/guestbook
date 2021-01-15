@@ -9,6 +9,7 @@
  (fn [{:keys [db]} _]
    {:db (assoc db
                :messages/loading? true
+               :messages/list nil
                :messages/filter nil)
     :ajax/get {:url "/api/messages"
                :success-path [:messages]
@@ -19,7 +20,8 @@
  (fn [{:keys [db]} [_ author]]
    {:db (assoc db
                :messages/loading? true
-               :messages/filter {:author author})
+               :messages/filter {:author author}
+               :messages/list nil)
     :ajax/get {:url (str "/api/messages/by/" author)
                :success-path [:messages]
                :success-event [:messages/set]}}))
@@ -149,6 +151,13 @@
      (if @loading?
        "Loading messages..."
        "Refresh Messages")]))
+
+(defn message-list-placeholder []
+  [:ul.messages
+   [:li
+    [:p "Loading Messages..."]
+    [:div {:style {:width "10em"}}
+     [:progress.progress.is-dark {:max 100} "30%"]]]])
 
 (defn message-list [messages]
   [:ul.messages
