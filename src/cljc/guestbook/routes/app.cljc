@@ -4,7 +4,8 @@
              [guestbook.middleware :as middleware]]
        :cljs [[guestbook.views.home :as home]
               [guestbook.views.author :as author]
-              [guestbook.views.profile :as profile]])))
+              [guestbook.views.profile :as profile]
+              [guestbook.views.post :as post]])))
 
 #?(:clj
    (defn home-page [request]
@@ -35,4 +36,12 @@
      {:name ::profile}
      #?(:cljs
         {:controllers profile/profile-controllers
-         :view #'profile/profile}))]])
+         :view #'profile/profile}))]
+
+   ["/post/:post"
+    (merge
+     {:name ::post}
+     #?(:cljs
+        {:parameters {:path {:post pos-int?}}
+         :controllers post/post-controllers
+         :view #'post/post-page}))]])

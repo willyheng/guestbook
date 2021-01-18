@@ -18,3 +18,6 @@
     (db/save-message! (assoc message
                              :author login
                              :name (or display-name login)))))
+
+(defn get-message [post-id]
+  (db/get-message {:id post-id}))

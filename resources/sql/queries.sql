@@ -5,6 +5,19 @@ INSERT INTO posts
 VALUES (:author, :name, :message)
 RETURNING *;
 
+-- :name get-message :? :1
+-- :doc selects a message
+SELECT
+  p.id                  as id,
+  p.timestamp           as timestamp,
+  p.message             as message,
+  p.name                as name,
+  p.author              as author,
+  a.profile->>'avatar'  as avatar
+FROM posts AS p JOIN users AS a
+ON a.login = p.author
+WHERE p.id = :id
+
 -- :name get-messages :? :*
 -- :doc selects all available messages
 SELECT
