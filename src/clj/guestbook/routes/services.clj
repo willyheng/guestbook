@@ -259,6 +259,31 @@
                    (log/error e)
                    (response/internal-server-error
                     {:errors {:server-error ["Failed to set profile!"]}}))))}}]
+    ["/change-password"
+     {::auth/roles (auth/roles :account/set-profile!)
+      :post {:parameters
+             {:body
+              {:old-password string?
+               :new-password string?
+               :confirm-password string?}}
+
+             :handler
+             (fn [{{{:keys [old-password new-password confirm-password]} :body} :parameters
+                   {:keys [identity]} :session}]
+               (if (not= new-password confirm-password)
+                 (response/bad-request
+                  {:error :mismatch
+                   :message "Password and confirm fields must match!"})
+                 (try
+                   (auth/change-password! (:login identity) old-password new-password)
+                   (response/ok {:success true})
+                   (catch clojure.lang.ExceptionInfo e
+                     (if (= (:guestbook/error-id (ex-data e))
+                            ::auth/authentication-failure)
+                       (response/unauthorized
+                        {:error :incorrect-password
+                         :message "Old password is incorrect, please try again."})
+                       (throw e))))))}}]   
     ["/media/upload"
      {::auth/roles (auth/roles :media/upload)
       :post {:parameters {:multipart (s/map-of keyword? multipart/temp-file-part)}

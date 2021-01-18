@@ -67,3 +67,9 @@ WHERE media.owner = :owner
 -- :doc gets a file from the database
 SELECT * FROM media
 WHERE name = :name
+
+-- :name set-password-for-user!* :! :n
+-- :doc sets a user password
+UPDATE users
+SET password = :password
+WHERE login = :login
