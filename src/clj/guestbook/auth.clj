@@ -32,6 +32,15 @@
       (when (hashers/check password hashed)
         (dissoc user :password)))))
 
+(defn delete-account! [login password]
+  (jdbc/with-db-transaction [t-conn db/*db*]
+    (let [{hashed :password} (db/get-user-for-auth* t-conn {:login login})]
+      (if (hashers/check password hashed)
+        (db/delete-user!* t-conn {:login login})
+        (throw (ex-info "Password is incorrect!"
+                        {:guestbook/error-id ::authenticate-failure
+                         :error "Password is incorrect!"}))))))
+
 (defn identity->roles [identity]
   (cond-> #{:any}
     (some? identity) (conj :authenticated)))

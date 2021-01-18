@@ -73,3 +73,7 @@ WHERE name = :name
 UPDATE users
 SET password = :password
 WHERE login = :login
+
+-- :name delete-user!* :! :n
+DELETE FROM users
+WHERE login = :login
