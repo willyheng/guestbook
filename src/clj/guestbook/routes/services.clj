@@ -16,7 +16,12 @@
    [spec-tools.data-spec :as ds]
    [guestbook.auth.ring :refer [wrap-authorized get-roles-from-match]]
    [clojure.tools.logging :as log]
-   [guestbook.author :as author]))
+   [guestbook.author :as author]
+   [clojure.java.io :as io]
+   [guestbook.db.core :as db]
+   [guestbook.media :as media]
+   [clojure.spec.alpha :as s]
+   [clojure.string :as string]))
 
 (defn service-routes []
   ["/api"
@@ -166,7 +171,9 @@
           [{:id pos-int?
             :name string?
             :message string?
-            :timestamp inst?}]}}}}
+            :timestamp inst?
+            :author (ds/maybe string?)
+            :avatar (ds/maybe string?)}]}}}}
       :handler
       (fn [_]
         (response/ok (msg/message-list)))}]
@@ -181,7 +188,9 @@
           [{:id pos-int?
             :name string?
             :message string?
-            :timestamp inst?}]}}}}
+            :timestamp inst?
+            :author (ds/maybe string?)
+            :avatar (ds/maybe string?)}]}}}}
       :handler
       (fn [{{{:keys [author]} :path} :parameters}]
         (response/ok (msg/messages-by-author author)))}]]
@@ -190,8 +199,7 @@
     {::auth/roles (auth/roles :message/create!)
      :post {:parameters
             {:body ;; Data Spec for Request body parameters
-             {:name string?
-              :message string?}}
+             {:message string?}}
 
             :responses
             {200 {:body map?}
@@ -250,4 +258,69 @@
                  (catch Exception e
                    (log/error e)
                    (response/internal-server-error
-                    {:errors {:server-error ["Failed to set profile!"]}}))))}}]]])
+                    {:errors {:server-error ["Failed to set profile!"]}}))))}}]
+    ["/media/upload"
+     {::auth/roles (auth/roles :media/upload)
+      :post {:parameters {:multipart (s/map-of keyword? multipart/temp-file-part)}
+             :handler
+             (fn [{{mp :multipart} :parameters
+                   {:keys [identity]} :session}]
+               (response/ok
+                (reduce-kv
+                 (fn [acc name {:keys [size content-type] :as file-part}]
+                   (cond
+                     (> size (* 5 1024 1024))
+                     (do
+                       (log/error "File " name
+                                  " exceeded max size of 5MB. (size: " size ")")
+                       (update acc :failed-uploads (fnil conj []) name))
+                     (re-matches #"image/.*" content-type)
+                     (-> acc
+                         (update :files-uploaded conj name)
+                         (assoc name
+                                (str "/api/media/"
+                                     (cond
+                                       (= name :avatar)
+                                       (media/insert-image-returning-name
+                                        (assoc file-part
+                                               :filename
+                                               (str (:login identity) "_avatar.png"))
+                                        {:width 128
+                                         :height 128
+                                         :owner (:login identity)})
+
+                                       (= name :banner)
+                                       (media/insert-image-returning-name
+                                        (assoc file-part
+                                               :filename
+                                               (str (:login identity) "_banner.png"))
+                                        {:width 1200
+                                         :height 400
+                                         :owner (:login identity)})
+
+                                       :else
+                                       (media/insert-image-returning-name
+                                        (update
+                                         file-part
+                                         :filename
+                                         string/replace #"\.[^\.]+$" ".png")
+                                        {:max-width 800
+                                         :max-height 2000
+                                         :owner (:login identity)})))))
+                     :else
+                     (do
+                       (log/error "Unsupported file type" content-type "for file" name)
+                       (update acc :failed-uploads (fnil conj []) name))))
+                 {:files-uploaded []}
+                 mp)))}}]]
+
+   ["/media/:name"
+    {::auth/roles (auth/roles :media/get)
+     :get {:parameters
+           {:path {:name string?}}
+           :handler (fn [{{{:keys [name]} :path} :parameters}]
+                      (if-let [{:keys [data type]} (db/get-file {:name name})]
+                        (-> (io/input-stream data)
+                            (response/ok)
+                            (response/content-type type))
+                        (response/not-found)))}}]])

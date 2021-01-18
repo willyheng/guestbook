@@ -33,4 +33,6 @@
    :messages/list #{:any}
    :author/get #{:any}
    :account/set-profile! #{:authenticated}
-   :swagger/swagger #{:any}})
+   :swagger/swagger #{:any}
+   :media/get #{:any}
+   :media/upload #{:authenticated}})

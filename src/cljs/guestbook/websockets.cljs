@@ -48,6 +48,9 @@
   [{:keys [event]} _]
   (.log js/console "Stated Changed: " (pr-str event)))
 
+(defmethod handle-message :chsk/ws-ping ; Ignores pings
+  [{:keys [event]} _])
+
 (defmethod handle-message :default
   [{:keys [event]} _]
   (.warn js/console "Unknown websocket message: " (pr-str event)))
