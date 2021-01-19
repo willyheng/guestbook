@@ -60,6 +60,9 @@
 
 (defn post [{:keys [name author message timestamp avatar] :as post-content}]
   [:div.content
+   [:button.button.is-info.is-outlined.is-fullwidth
+    {:on-click #(.back js/window.history)}
+    "Back to Feed"]
    [:h3.title.is-3 "Post by " name
     "<" [:a {:href (str "/user/" author)} (str "@" author)] ">"]
    [:h4.subtitle.is-4 "Posted at " (.toLocaleString timestamp)]
