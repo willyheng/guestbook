@@ -41,7 +41,8 @@
                  [day8.re-frame/re-frame-10x "0.7.0"]
                  [com.taoensso/sente "1.15.0"]
                  [org.postgresql/postgresql "42.2.6"]
-                 [buddy "2.0.0"]]
+                 [buddy "2.0.0"]
+                 [markdown-clj "1.10.5"]]
 
   :min-lein-version "2.0.0"
   

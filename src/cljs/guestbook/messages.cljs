@@ -3,7 +3,7 @@
             [reagent.core :as r]
             [re-frame.core :as rf]
             [guestbook.validation :refer [validate-message]]
-            [guestbook.components :refer [text-input textarea-input image]]
+            [guestbook.components :refer [text-input textarea-input image md]]
             [reagent.dom :as dom]
             [reitit.frontend.easy :as rtfe]))
 
@@ -161,26 +161,31 @@
     [:div {:style {:width "10em"}}
      [:progress.progress.is-dark {:max 100} "30%"]]]])
 
-(defn message [{:keys [id timestamp message name author avatar] :as m}]
-  [:article.media
-   [:figure.media-left
-    [image (or avatar "/img/avatar-default.png") 128 128]]
-   [:div.media-content>div.content 
-    [:time (.toLocaleString timestamp)]
-    [:p message]
-    [:p " - " name
-     " <"
-     (if author
-       [:a {:href (str "/user/" author)} (str "@" author)]
-       [:span.is-italic "account not found"])
-     ">"]
-    [:p>a {:on-click (fn [_]
-                       (let [{{:keys [name]} :data
-                              {:keys [path query]} :parameters}
-                             @(rf/subscribe [:router/current-route])]
-                         (rtfe/replace-state name path (assoc query :post id)))
-                       (rtfe/push-state :guestbook.routes.app/post {:post id}))}
-     "View Post"]]])
+(defn message
+  ([m] [message m {}])
+  ([{:keys [id timestamp message name author avatar] :as m}
+    {:keys [include-link?]
+     :or {include-link? true}}]
+   [:article.media
+    [:figure.media-left
+     [image (or avatar "/img/avatar-default.png") 128 128]]
+    [:div.media-content>div.content 
+     [:time (.toLocaleString timestamp)]
+     [md message]
+     (when include-link?
+       [:p>a {:on-click (fn [_]
+                          (let [{{:keys [name]} :data
+                                 {:keys [path query]} :parameters}
+                                @(rf/subscribe [:router/current-route])]
+                            (rtfe/replace-state name path (assoc query :post id)))
+                          (rtfe/push-state :guestbook.routes.app/post {:post id}))}
+        "View Post"])
+     [:p " - " name
+      " <"
+      (if author
+        [:a {:href (str "/user/" author)} (str "@" author)]
+        [:span.is-italic "account not found"])
+      ">"]]]))
 
 (defn msg-li [m message-id]
   (r/create-class
@@ -209,24 +214,50 @@
                                    message
                                    (string/join error))]))
 
+(defn message-preview [m]
+  (r/with-let [expanded (r/atom false)]
+    [:<>
+     [:button.button.is-secondary.is-fullwidth
+      {:on-click #(swap! expanded not)}
+      (if @expanded
+        "Hide Preview"
+        "Show Preview")]
+     (when @expanded
+       [:ul.messages
+        {:style
+         {:margin-left 0}}
+        [:li
+         [message m
+          {:include-link? false}]]])]))
+
 (defn message-form []
-  [:div
-   [:div.field
-    [errors-component :server-error]
-    [errors-component :unauthorized "Please log in before posting"]
-    [:div.field
-     [:label.label {:for :name} "Name"]
-     (let [{:keys [login profile]} @(rf/subscribe [:auth/user])]
-       (:display-name profile login))]]
-   [:div.field
-    [:label.label {:for :message} "Message"]
-    [errors-component :message]
-    [textarea-input {:attrs {:name :message}
-                     :value (rf/subscribe [:form/field :message])
-                     :on-save #(rf/dispatch [:form/set-field :message %])}]]
-   [:input.button.is-primary
-    {:type :submit
-     :disabled @(rf/subscribe [:form/validation-errors?])
-     :on-click #(rf/dispatch [:message/send!
-                              @(rf/subscribe [:form/fields])])
-     :value "comment"}]])
+  [:div.card
+   [:div.card-header>p.card-header-title
+    "Post Something!"]
+   (let [{:keys [login profile]} @(rf/subscribe [:auth/user])
+         display-name (:display-name profile login)]
+     [:div.card-content
+      [message-preview {:message @(rf/subscribe [:form/field :message])
+                        :id -1
+                        :timestamp (js/Date.)
+                        :name display-name
+                        :author login
+                        :avatar (:avatar profile)}]
+      [errors-component :server-error]
+      [errors-component :unauthorized "Please log in before posting."]
+      [:div.field
+       [:label.label {:for :name} "Name"]
+       display-name]
+      [:div.field
+       [:label.label {:for :message} "Message"]
+       [errors-component :message]
+       [textarea-input {:attrs {:name :message}
+                        :save-timeout 1000
+                        :value (rf/subscribe [:form/field :message])
+                        :on-save #(rf/dispatch [:form/set-field :message %])}]]
+      [:input.button.is-primary.is-fullwidth
+       {:type :submit
+        :disabled @(rf/subscribe [:form/validation-errors?])
+        :on-click #(rf/dispatch [:message/send!
+                                 @(rf/subscribe [:form/fields])])
+        :value "comment"}]])])

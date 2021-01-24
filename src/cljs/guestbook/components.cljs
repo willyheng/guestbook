@@ -1,6 +1,10 @@
 (ns guestbook.components
   (:require
-   [reagent.core :as r]))
+   [reagent.core :as r]
+   [clojure.string :as string]
+   [markdown.transformers :refer [transformer-vector]]
+   [markdown.core :refer [md->html]]
+   [goog.functions :as gf]))
 
 (defn text-input [{val :value
                    attrs :attrs
@@ -20,9 +24,13 @@
 
 (defn textarea-input [{val :value
                        attrs :attrs
+                       ms :save-timeout
                        :keys [on-save]}]
   (let [draft (r/atom nil)
-        value (r/track #(or @draft @val ""))]
+        value (r/track #(or @draft @val ""))
+        save-on-change (if ms
+                         (gf/debounce on-save ms)
+                         (fn [& _]))]
     (fn []
       [:textarea.textarea
        (merge attrs
@@ -30,7 +38,10 @@
                :on-blur (fn []
                           (on-save (or @draft ""))
                           (reset! draft nil))
-               :on-change #(reset! draft (.. % -target -value))
+               :on-change (fn [e]
+                            (let [v (.. e -target -value)]
+                              (reset! draft v)
+                              (save-on-change v)))
                :value @value})])))
 
 (defn image [url width height]
@@ -59,3 +70,63 @@
                                         (set! "")))}]
    [:span.file-cta
     [:span.file-label label-text]]])
+
+(defn escape-html
+  "Change Special characters into HTML character entities."
+  [text state]
+  (if (or (:code state) (:codeblock state))
+    [text state] ;; Don't escape code blocks!
+    [(string/escape text {\& "&amp;"
+                          \< "&lt;"
+                          \> "&gt;"
+                          \" "&quot;"
+                          \' "&#39;"})
+     state]))
+
+(defn linkify-tags
+  "Change tags into links"
+  [text state]
+  (if (or (:code state) (:codeblock state))
+    [text state]
+    [(string/replace
+      text
+      #_#"(?<=\s|^)#([-\w]+)(?=\s|$)"
+      #"(\s|^)#([-\w]+)(?=\s|$)" "$1<a href=\"/tag/$2\"
+          title=\"View posts tagged #$2\"
+          target=\"_blank\">
+         #$2
+</a>")
+     state]))
+
+(defn linkify-mentions
+  "Change mentions into links"
+  [text state]
+  (if (or (:code state) (:codeblock state))
+    [text state]
+    [(string/replace
+      text
+      #_#"@([-\w]+)(?=\s|$)"
+      #"(\s|^)@([-\w]+)(?=\s|$)"
+      "$1<a href=\"/user/$2\"
+        title=\"Homepage of @$2\"
+        target=\"_blank\">
+       @$2
+      </a>")
+     state]))
+
+(def transformers
+  (into [escape-html linkify-tags linkify-mentions] transformer-vector))
+
+(defn parse-message [message]
+  (md->html message :replacement-transformers transformers))
+
+(defn md
+  ([content]
+   [md :p {} content])
+  ([tag content]
+   [md tag {}content])
+  ([tag attrs content]
+   [tag (-> attrs
+            (assoc :dangerouslySetInnerHTML
+                   {:__html (parse-message content)})
+            (update :class (fnil conj []) "markdown"))]))
