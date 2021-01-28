@@ -53,6 +53,7 @@
    :session/get #{:any}
    :messages/list #{:any}
    :message/get #{:any}
+   :message/boost! #{:authenticated}
    :author/get #{:any}
    :account/set-profile! #{:authenticated}
    :swagger/swagger #{:any}
