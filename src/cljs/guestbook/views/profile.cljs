@@ -140,7 +140,7 @@
      [:h3 "Avatar"
       (when @(rf/subscribe [:profile/field-changed? k])
         " (Changed)")]
-     [image @url 128 128]
+     [image (str @url "#" (.getTime (js/Date.))) 128 128]
      [:div.field.is-grouped
       [:div.control
        [image-uploader
