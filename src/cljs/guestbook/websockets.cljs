@@ -33,6 +33,10 @@
   [_ msg-add-event]
   (rf/dispatch msg-add-event))
 
+(defmethod handle-message :message/add-boost
+  [_ msg-add-event]
+  (rf/dispatch msg-add-event))
+
 (defmethod handle-message :message/creation-errors
   [_ [_ response]]
   (rf/dispatch
