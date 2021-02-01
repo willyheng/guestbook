@@ -209,7 +209,8 @@
      {::auth/roles (auth/roles :message/create!)
       :post {:parameters
              {:body ;; Data Spec for Request body parameters
-              {:message string?}}
+              {:message string?
+               (ds/opt :parent) (ds/maybe int?)}}
 
              :responses
              {200 {:body map?}
