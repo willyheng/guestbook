@@ -8,6 +8,8 @@ RETURNING *;
 -- :name get-message :? :1
 -- :doc selects a message
 SELECT * FROM posts_with_meta
+  INNER JOIN (SELECT id, parent FROM posts) AS p USING (id)
+  INNER JOIN reply_count USING (id)
 WHERE id = :id
 
 -- :name get-messages :? :*
@@ -18,6 +20,14 @@ SELECT * FROM posts_with_meta
 -- :doc selects all messages from author
 SELECT * FROM posts_with_meta
 WHERE author = :author
+
+-- :name get-replies :? :*
+-- :doc gets replies
+SELECT * FROM posts_with_meta
+  INNER JOIN (SELECT id, parent FROM posts) AS p USING (id)
+  INNER JOIN reply_count USING (id)
+WHERE id IN (SELECT id FROM posts
+              WHERE parent = :id)
 
 -- :name create-user! :! :n
 -- :doc creates a new user with provided login and hashed password

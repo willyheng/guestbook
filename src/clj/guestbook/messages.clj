@@ -22,15 +22,16 @@
                        (db/save-message!  (assoc message
                                                        :author login
                                                        :name (or display-name login)
-                                                       :parent (:parent message))))
-              x (db/get-timeline-post {:post post-id
+                                                       :parent (:parent message))))]
+          (db/get-timeline-post {:post post-id
                                          :user login
-                                         :is_boost false})]
-          (println "HELLO" post-id x)
-          x)))))
+                                         :is_boost false}))))))
 
 (defn get-message [post-id]
   (db/get-message {:id post-id}))
+
+(defn get-replies [id]
+  (db/get-replies {:id id}))
 
 (defn boost-message [{{:keys [display-name]} :profile
                       :keys [login]} post-id poster]

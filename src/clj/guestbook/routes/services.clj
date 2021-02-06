@@ -255,6 +255,16 @@
                   {:message post})
                  (response/not-found
                   {:message "Post not found"})))}}]
+     ["/replies"
+      {::auth/roles (auth/roles :message/get)
+       :get {:responses
+             {200 {:message map?}}
+
+             :handler
+             (fn [{{{:keys [post-id]} :path} :parameters}]
+               (let [replies (msg/get-replies post-id)]
+                 (response/ok
+                  {:replies replies})))}}]
      ["/boost"
       {::auth/roles (auth/roles :message/boost!)
        :post {:parameters {:body {:poster (ds/maybe string?)}}
