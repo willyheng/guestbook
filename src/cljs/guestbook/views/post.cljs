@@ -159,12 +159,29 @@
  (fn [db [_ id]]
    (contains? (::expanded-posts db) id)))
 
+;; post page custom handler
+
+(rf/reg-event-db
+ ::add-message
+ (fn [db [_ post-id {:keys [root_id messages]}]]
+   (if (= post-id root_id)
+     (let [parent-id (:id (second messages))]
+       (if (= parent-id post-id)
+         (update-in db [::post :reply_count] inc)
+         (update db ::posts
+                 #(if (contains? % parent-id)
+                    (update-in % [parent-id :reply_count] inc)
+                    %))))
+     db)))
+
 (def post-controllers
   [{:parameters {:path [:post]}
     :start (fn [{{:keys [post]} :path}]
+             (rf/dispatch [:ws/set-message-add-handler [::add-message post]])
              (rf/dispatch [::fetch-post post])
              (rf/dispatch [::fetch-replies post]))
     :stop (fn [_]
+            (rf/dispatch [:ws/set-message-add-handler nil])
             (rf/dispatch [::collapse-all])
             (rf/dispatch [::clear-post])
             (rf/dispatch [::clear-replies]))}])
