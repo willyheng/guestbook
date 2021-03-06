@@ -2,7 +2,8 @@
   (:require [re-frame.core :as rf]
             [reagent.core :as r]
             [cljs.pprint :refer [pprint]]
-            [guestbook.messages :as msg]))
+            [guestbook.messages :as msg]
+            [reagent.dom :as dom]))
 
 (defn clear-post-keys [db]
   (dissoc db ::error ::post))
@@ -174,6 +175,30 @@
                     %))))
      db)))
 
+;; fetch parents
+
+(rf/reg-event-fx
+ ::fetch-parents
+ (fn [{:keys [db]} [_ post-id]]
+   {:ajax/get {:url (str "/api/message/" post-id "/parents")
+               :success-path [:parents]
+               :sucesss-event [::add-parents post-id]}}))
+
+(defn add-post-to-db [db {:keys [id parent] :as post}]
+  (-> db
+      (assoc-in [::posts id] post)
+      (update-in [::replies parent]
+                 #(if (some (partial = id) %)
+                    %
+                    (conj % id)))
+      (assoc-in [::replies-status id] :success)
+      (update ::expanded-posts (fnil conj #{}) id)))
+
+(rf/reg-event-db
+ ::add-parents
+ (fn [db [_ post-id parents]]
+   (reduce add-post-to-db db parents)))
+
 (def post-controllers
   [{:parameters {:path [:post]}
     :start (fn [{{:keys [post]} :path}]
@@ -184,13 +209,26 @@
             (rf/dispatch [:ws/set-message-add-handler nil])
             (rf/dispatch [::collapse-all])
             (rf/dispatch [::clear-post])
-            (rf/dispatch [::clear-replies]))}])
+            (rf/dispatch [::clear-replies]))}
+   {:parameters {:query [:reply]}
+    :start (fn [{{:keys [reply]} :query}]
+             (when reply
+               (rf/dispatch [::fetch-parents reply])))}])
 
 (defn loading-bar []
   [:progress.progress.is-dark {:max 100} "30%"])
 
 (defn reply [post-id]
-  [msg/message @(rf/subscribe [::reply post-id]) {:include-link? false}])
+  (r/create-class
+   {:component-did-mount
+    (fn [this]
+      (let [message-id
+            (:reply (:query (:parameters @(rf/subscribe [:router/current-route]))))]
+        (when (= message-id post-id)
+          (.scrollIntoView (dom/dom-node this)))))
+    :reagent-render
+    (fn [_]
+      [msg/message @(rf/subscribe [::reply post-id]) {:include-link? false}])}))
 
 (defn expand-control [post-id]
   (let [expanded? @(rf/subscribe [::post-expanded? post-id])

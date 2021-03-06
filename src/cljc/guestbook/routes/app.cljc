@@ -45,6 +45,7 @@
     (merge
      {:name ::post}
      #?(:cljs
-        {:parameters {:path {:post pos-int?}}
+        {:parameters {:query {(ds/opt :reply) pos-int?}
+                      :path {:post pos-int?}}
          :controllers post/post-controllers
          :view #'post/post-page}))]])

@@ -255,6 +255,13 @@
                   {:message post})
                  (response/not-found
                   {:message "Post not found"})))}}]
+     ["/parents"
+      {::auth/roles (auth/roles :message/get)
+       :get {:handler (fn [{{{:keys [post-id]} :path} :parameters}]
+                        (let [parents (msg/get-parents post-id)]
+                          (response/ok
+                           {:parents
+                            parents})))}}]
      ["/replies"
       {::auth/roles (auth/roles :message/get)
        :get {:responses

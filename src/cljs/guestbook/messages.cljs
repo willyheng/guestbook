@@ -279,14 +279,16 @@
         "NULL POSTED_AT")]]))
 
 (defn expand-post-button [{:keys [id root_id] :as m}]
-  [:button.button.is-rounded.is-small.is-secondary.i-soutlied.level-item
+  [:button.button.is-rounded.is-small.is-secondary.is-outlined.level-item
    {:on-click
     (fn [_]
       (let [{{:keys [name]} :data
              {:keys [path query]} :parameters}
             @(rf/subscribe [:router/current-route])]
         (rtfe/replace-state name path (assoc query :post id)))
-      (rtfe/push-state :guestbook.routes.app/post {:post root_id}))}
+      (rtfe/push-state :guestbook.routes.app/post {:post root_id}
+                       (when (not= root_id id)
+                         {:reply id})))}
    [:i.material-icons
     "open_in_new"]])
 
@@ -322,7 +324,7 @@
      :or {include-link? true
           include-bar? true}}]
    [:article.media
-    [:figure.media-left
+   [:figure.media-left
      [image (or avatar "/img/avatar-default.png") 128 128]]
     [:div.media-content
      [:div.content

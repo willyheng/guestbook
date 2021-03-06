@@ -145,3 +145,17 @@ AND poster = :user
 AND id = :post
 ORDER BY posted_at ASC
 LIMIT 1
+
+-- :name get-parents :?
+-- :doc get the parents of post
+SELECT * FROM posts_with_meta
+  INNER JOIN (SELECT id, parent FROM posts) AS p USING (id)
+  INNER JOIN reply_count USING (id)
+WHERE id IN (WITH RECURSIVE parents AS
+              (SELECT id, parent FROM posts
+                WHERE id = :id
+              UNION
+              SELECT p.id, p.parent FROM posts p
+                INNER JOIN parents pp
+                ON p.id = pp.parent)
+             SELECT id FROM parents)
