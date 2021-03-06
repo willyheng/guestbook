@@ -213,7 +213,25 @@
    {:parameters {:query [:reply]}
     :start (fn [{{:keys [reply]} :query}]
              (when reply
-               (rf/dispatch [::fetch-parents reply])))}])
+               (rf/dispatch [::set-scroll-to reply])
+               (rf/dispatch [::fetch-parents reply])))
+    :stop (fn [_]
+            (rf/dispatch [::set-scroll-to nil]))}])
+
+;; Scroll
+
+(rf/reg-event-db
+ ::set-scroll-to
+ (fn [db [_ id]]
+   (if (nil? id)
+     (dissoc db ::scroll-to-post)
+     (assoc db ::scroll-to-post id))))
+
+(rf/reg-sub
+ ::scroll?
+ (fn [db [_ id]]
+   (= id (::scroll-to-post db))))
+
 
 (defn loading-bar []
   [:progress.progress.is-dark {:max 100} "30%"])
@@ -222,10 +240,9 @@
   (r/create-class
    {:component-did-mount
     (fn [this]
-      (let [message-id
-            (:reply (:query (:parameters @(rf/subscribe [:router/current-route]))))]
-        (when (= message-id post-id)
-          (.scrollIntoView (dom/dom-node this)))))
+      (when @(rf/subscribe [::scroll? post-id])
+        (rf/dispatch [::set-scroll-to nil])
+        (.scrollIntoView (dom/dom-node this))))
     :reagent-render
     (fn [_]
       [msg/message @(rf/subscribe [::reply post-id]) {:include-link? false}])}))
