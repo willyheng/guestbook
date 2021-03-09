@@ -58,4 +58,5 @@
    :account/set-profile! #{:authenticated}
    :swagger/swagger #{:any}
    :media/get #{:any}
-   :media/upload #{:authenticated}})
+   :media/upload #{:authenticated}
+   :messages/feed #{:authenticated}})

@@ -6,7 +6,8 @@
               [guestbook.views.author :as author]
               [guestbook.views.profile :as profile]
               [guestbook.views.post :as post]
-              [guestbook.views.tag :as tag]])))
+              [guestbook.views.tag :as tag]
+              [guestbook.views.feed :as feed]])))
 
 #?(:clj
    (defn home-page [request]
@@ -58,4 +59,12 @@
         {:parameters {:query {(ds/opt :post) pos-int?}
                       :path {:tag string?}}
          :controllers tag/tag-controllers
-         :view #'tag/tag-page}))]])
+         :view #'tag/tag-page}))]
+
+   ["/feed"
+    (merge
+     {:name ::feed}
+     #?(:cljs
+        {:parameters {:query {(ds/opt :post) pos-int?}}
+         :controllers feed/feed-controllers
+         :view #'feed/feed-page}))]])
