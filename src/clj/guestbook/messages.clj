@@ -51,3 +51,7 @@
 
 (defn get-parents [id]
   (db/get-parents {:id id}))
+
+(defn get-feed-for-tag [tag]
+  {:messages
+   (db/get-feed-for-tag {:tag tag})})

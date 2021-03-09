@@ -159,3 +159,18 @@ WHERE id IN (WITH RECURSIVE parents AS
                 INNER JOIN parents pp
                 ON p.id = pp.parent)
              SELECT id FROM parents)
+
+-- :name get-feed-for-tag :? :*
+-- :require [guestbook.db.util :refer [tag-regex]]
+-- :doc given a tag, return its feed
+SELECT * FROM
+(SELECT DISTINCT ON (p.id) * FROM posts_and_boosts AS p
+  WHERE
+  /*~ (if (:tag params) */
+    p.message ~*
+    /*~*/
+    FALSE
+    /*~ ) ~*/
+    --~ (when (:tag params) (tag-regex (:tag params)))
+    ORDER BY p.id, posted_at DESC) AS t
+  ORDER BY t.posted_at ASC

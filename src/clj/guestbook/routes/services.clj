@@ -182,6 +182,28 @@
                        (msg/timeline)
                        (msg/message-list))))}]
 
+    ["/tagged/:tag"
+     {:get
+      {:parameters {:path {:tag string?}}
+       :responses
+       {200
+        {:body ;; Data spec for response body
+         {:messages
+          [{:id pos-int?
+            :name string?
+            :message string?
+            :timestamp inst?
+            :author (ds/maybe string?)
+            :avatar (ds/maybe string?)}]}}}
+       :handler
+       (fn [{{{:keys [tag]} :path
+              {:keys [boosts]
+               :or {boosts true}} :query} :parameters}]
+         (if boosts
+           (response/ok
+            (msg/get-feed-for-tag tag))
+           (response/not-implemented {:message "Tags only support boosts."})))}}]
+
     ["/by/:author"
      {:get
       {:parameters {:path {:author string?}}

@@ -6,7 +6,8 @@
     [mount.core :refer [defstate]]
     [guestbook.config :refer [env]]
     [java-time :refer [java-date]]
-    [cheshire.core :refer [generate-string parse-string]])
+    [cheshire.core :refer [generate-string parse-string]]
+    [guestbook.db.util])
   (:import org.postgresql.util.PGobject
            java.sql.Array
            clojure.lang.IPersistentMap
@@ -17,7 +18,6 @@
           :stop (conman/disconnect! *db*))
 
 (conman/bind-connection *db* "sql/queries.sql")
-
 
 (extend-protocol jdbc/IResultSetReadColumn
   java.sql.Timestamp
